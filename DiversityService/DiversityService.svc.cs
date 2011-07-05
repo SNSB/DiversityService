@@ -22,8 +22,9 @@ namespace DiversityService
 
         public IEnumerable<CollectionEvent> GetEvents(int skip, int count)
         {
-            DiversityDataContext db = new DiversityDataContext();
-            return (from ev in db.CollectionEvent select ev).Skip(skip).Take(count);
+            
+                return Enumerable.Empty<CollectionEvent>();           
+           
         }
     }
 }
