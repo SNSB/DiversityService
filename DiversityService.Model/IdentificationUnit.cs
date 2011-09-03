@@ -19,8 +19,5 @@ namespace DiversityService.Model
         public string Gender { get; set; }
         public string UnitIdentifier { get; set; }
         public string UnitDescription { get; set; }
-
-        public bool? IsModified { get; set; }
-
     }
 }
