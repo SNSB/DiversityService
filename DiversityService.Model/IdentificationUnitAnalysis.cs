@@ -17,5 +17,6 @@ namespace DiversityService.Model
         public int AnalysisID { get; set; }
         public int IdentificationUnitAnalysisID { get; set; }
         public string AnalyssisResult { get; set; }
+        public DateTime AnalysisDate { get; set; } //Datum mit Uhrzeit
     }
 }
