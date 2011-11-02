@@ -1,18 +1,16 @@
 ﻿using System;
-using System.Net;
 
 
 namespace DiversityService.Model
-{    
-    public class Term
+{
+    public class AnalysisResult
     {
         //Read-Only
-
-        public string Code { get; set; }
-        public int SourceID { get; set; }
+        public int AnalysisID { get; set; }
+        public string Result { get; set; }
         public string Description { get; set; }
+        public string Notes { get; set; }
         public string DisplayText { get; set; }
-        public string ParentCode { get; set; }
         public DateTime LogUpdatedWhen { get; set; }
     }
 }
