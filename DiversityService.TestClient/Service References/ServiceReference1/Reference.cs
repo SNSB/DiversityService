@@ -1869,6 +1869,8 @@ namespace DiversityService.TestClient.ServiceReference1 {
         
         private string DisplayTextField;
         
+        private bool IsPublicListField;
+        
         private string TableField;
         
         private string TaxonomicGroupField;
@@ -1882,6 +1884,19 @@ namespace DiversityService.TestClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.DisplayTextField, value) != true)) {
                     this.DisplayTextField = value;
                     this.RaisePropertyChanged("DisplayText");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool IsPublicList {
+            get {
+                return this.IsPublicListField;
+            }
+            set {
+                if ((this.IsPublicListField.Equals(value) != true)) {
+                    this.IsPublicListField = value;
+                    this.RaisePropertyChanged("IsPublicList");
                 }
             }
         }
