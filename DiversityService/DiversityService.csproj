@@ -116,7 +116,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>powershell -Command "&amp; { cp '$(SolutionDir)packages\LinqToXsd.2.0.2\lib\Xml.Schema.Linq.dll' '$(SolutionDir)packages\LinqToXsd.2.0.2\tools';   &amp; '$(SolutionDir)packages\LinqToXsd.2.0.2\tools\LinqToXsd.exe' '$(ProjectDir)DiversityService.Configuration.xsd' /fileName:'$(ProjectDir)Configuration.Xml.cs'}"</PreBuildEvent>
-  </PropertyGroup>  
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -21,7 +21,7 @@ namespace DiversityService
 
                 var geoString = SerializeLocalizations(localizations);
                 if (!string.IsNullOrWhiteSpace(geoString))
-                    db.Execute("Update [dbo].[CollectionEventSeries] Set geography=@0 Where SeriesID=@1", geoString, series.CollectionEventSeriesID);
+                    db.Execute("UPDATE [dbo].[CollectionEventSeries] SET geography=GEOGRAPHY::STGeomFromText(@0, 4326) WHERE SeriesID=@1", geoString, series.CollectionEventSeriesID);
 
                 t.Complete();
                 return series.CollectionEventSeriesID;
@@ -41,7 +41,7 @@ namespace DiversityService
                     db.Insert(loc);
 
                     if (!string.IsNullOrWhiteSpace(geoString))
-                        db.Execute("Update [dbo].[CollectionEventLocalisation] Set geography=@0 Where CollectionEventID=@1 AND LocalisationSystemID=@2", geoString, loc.CollectionEventID, loc.LocalisationSystemID);
+                        db.Execute("UPDATE [dbo].[CollectionEventLocalisation] SET geography=GEOGRAPHY::STGeomFromText(@0, 4326) WHERE CollectionEventID=@1 AND LocalisationSystemID=@2", geoString, loc.CollectionEventID, loc.LocalisationSystemID);
                 }
 
                 if (properties != null)
@@ -135,13 +135,16 @@ namespace DiversityService
 
         private static string SerializeLocalizations(IEnumerable<Localization> locs)
         {
-            var uniqueLocs = (locs != null) ? locs.Distinct().ToList() : new List<Localization>();
+            // The points in the LineString must be unique
+            var uniqueLocs = (locs != null) 
+                ? locs.Distinct().ToList()
+                : new List<Localization>();
 
             if (uniqueLocs.Count > 1)
             {
                 var cult = new CultureInfo("en-US");
                 return string.Format("LINESTRING({0})",
-                        string.Join(", ", locs.Select(gp => string.Format(cult, "{0} {1}", gp.Longitude, gp.Latitude)))
+                        string.Join(", ", uniqueLocs.Select(gp => string.Format(cult, "{0} {1}", gp.Longitude, gp.Latitude)))
                     );
             }
             else return string.Empty;
