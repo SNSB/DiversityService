@@ -41,7 +41,9 @@ namespace DiversityService
                     db.Insert(loc);
 
                     if (!string.IsNullOrWhiteSpace(geoString))
+                    {
                         db.Execute("UPDATE [dbo].[CollectionEventLocalisation] SET geography=GEOGRAPHY::STGeomFromText(@0, 4326) WHERE CollectionEventID=@1 AND LocalisationSystemID=@2", geoString, loc.CollectionEventID, loc.LocalisationSystemID);
+                    }
                 }
 
                 if (properties != null)
@@ -51,13 +53,11 @@ namespace DiversityService
                         db.Insert(p);
                     }
 
-
                 t.Complete();
 
                 return ev.CollectionEventID;
             }
         }
-
 
         public int InsertSpecimen(Specimen s, UserCredentials login)
         {
@@ -74,13 +74,11 @@ namespace DiversityService
             }
         }
 
-
         public int InsertIdentificationUnit(IdentificationUnit iu, IEnumerable<IdentificationUnitAnalysis> analyses, UserCredentials login)
         {
             using (var db = login.GetConnection())
             using (var t = db.GetTransaction())
             {
-
                 db.Insert(iu);
                 db.Insert(iu.GetIdentification(login));
 
@@ -106,7 +104,6 @@ namespace DiversityService
             }
         }
 
-
         public void InsertMMO(MultimediaObject mmo, UserCredentials login)
         {
             using (var db = login.GetConnection())
@@ -119,15 +116,18 @@ namespace DiversityService
                             CollectionEventSeriesImage cesi = mmo.ToSeriesImage();
                             db.Insert(cesi);
                             break;
+
                         case MultimediaOwner.Event:
                             CollectionEventImage cei = mmo.ToEventImage();
                             db.Insert(cei);
                             break;
+
                         case MultimediaOwner.Specimen:
                         case MultimediaOwner.IdentificationUnit:
                             CollectionSpecimenImage csi = mmo.ToSpecimenImage(db);
                             db.Insert(csi);
                             break;
+
                         default:
                             throw new ArgumentException("unknown type");
                     }
@@ -143,7 +143,7 @@ namespace DiversityService
         private static string SerializeLocalizations(IEnumerable<Localization> locs)
         {
             // The points in the LineString must be unique
-            var uniqueLocs = (locs != null) 
+            var uniqueLocs = (locs != null)
                 ? locs.Distinct().ToList()
                 : new List<Localization>();
 
@@ -151,7 +151,7 @@ namespace DiversityService
             {
                 var cult = new CultureInfo("en-US");
                 return string.Format("LINESTRING({0})",
-                        string.Join(", ", uniqueLocs.Select(gp => string.Format(cult, "{0} {1}", gp.Longitude, gp.Latitude)))
+                        string.Join(", ", uniqueLocs.Select(gp => string.Format(cult, "{0:R} {1:R}", gp.Longitude, gp.Latitude)))
                     );
             }
             else return string.Empty;
@@ -164,9 +164,9 @@ namespace DiversityService
                 return string.Empty;
 
             var cult = new CultureInfo("en-US");
-            string longitudeStr = longitude.Value.ToString(cult);
+            string longitudeStr = longitude.Value.ToString("R", cult);
 
-            string latStr = latitude.Value.ToString(cult);
+            string latStr = latitude.Value.ToString("R", cult);
             latStr = latStr.Replace(',', '.');
 
             StringBuilder builder = new StringBuilder("POINT(");
@@ -175,7 +175,7 @@ namespace DiversityService
             builder.Append(latStr);
             if (altitude.HasValue && double.IsNaN((double)altitude) == false)
             {
-                string altStr = altitude.Value.ToString(cult);
+                string altStr = altitude.Value.ToString("R", cult);
                 altStr = altStr.Replace(',', '.');
                 builder.Append(" ");
                 builder.Append(altStr);
