@@ -83,7 +83,14 @@ namespace DiversityService
 
                 db.Insert(iu);
                 db.Insert(iu.GetIdentification(login));
+
                 db.Insert(iu.GetGeoAnalysis(login));
+
+                var geoString = SerializeLocalization(iu.Latitude, iu.Longitude, iu.Altitude);
+                if (!string.IsNullOrWhiteSpace(geoString))
+                {
+                    db.Execute("UPDATE [dbo].[IdentificationUnitGeoAnalysis] SET Geography=GEOGRAPHY::STGeomFromText(@0, 4326) WHERE CollectionSpecimenID=@1 AND IdentificationUnitID=@2", geoString, iu.CollectionSpecimenID, iu.CollectionUnitID);
+                }
 
                 if (analyses != null)
                     foreach (var a in analyses)
