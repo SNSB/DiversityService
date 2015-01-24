@@ -9,12 +9,15 @@
     /// </summary>
     public static class ClientServiceConversions
     {
+        public const int ALTITUDE_LOC_SYS_ID = 4;
+        public const int WGS84_LOC_SYS_ID = 8;
+
         /// <summary>
         /// Extracts the geo location information stored in the client-side <see cref="Event"/> Object
         /// And converts it to its <see cref="CollectionEventLocalisation"/> representation.
         /// </summary>
         /// <param name="ev">The client-side Event object possibly containing location information.</param>
-        /// <param name="profile">The Profile of the User responsible for creating this object.</param>        
+        /// <param name="profile">The Profile of the User responsible for creating this object.</param>
         /// <returns>Between 0 and 2 <see cref="CollectionEventLocalisation"/> objects depending on the amount of information in the Input object.</returns>
         public static IEnumerable<CollectionEventLocalisation> GetLocalisations(this Event ev, UserCredentials profile)
         {
@@ -27,7 +30,7 @@
                 altitude.AverageLongitudeCache = ev.Longitude;
                 altitude.CollectionEventID = ev.CollectionEventID;
                 altitude.DeterminationDate = ev.CollectionDate;
-                altitude.LocalisationSystemID = 4;
+                altitude.LocalisationSystemID = ALTITUDE_LOC_SYS_ID;
                 altitude.Location1 = ev.Altitude.ToString();
                 altitude.ResponsibleAgentURI = profile.AgentURI;
                 altitude.ResponsibleName = profile.AgentName;
@@ -52,7 +55,7 @@
                 wgs84.AverageLongitudeCache = ev.Longitude;
                 wgs84.CollectionEventID = ev.CollectionEventID;
                 wgs84.DeterminationDate = ev.CollectionDate;
-                wgs84.LocalisationSystemID = 8;
+                wgs84.LocalisationSystemID = WGS84_LOC_SYS_ID;
                 wgs84.Location1 = ev.Longitude.ToString();
                 wgs84.Location2 = ev.Latitude.ToString();
                 wgs84.ResponsibleAgentURI = profile.AgentURI;
