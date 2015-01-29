@@ -27,7 +27,7 @@ namespace DiversityService
         {
             using (var db = login.GetConnection())
             {
-                var events = db.Query<Event>("FROM [dbo].[DiversityMobile_EventsForProject] (@0, @1) as [CollectionEvent]", login.ProjectID, locality).Take(15).ToList();
+                var events = db.Query<Event>("FROM [dbo].[DiversityMobile_EventsForProject] (@0, @1) as [CollectionEvent]", login.ProjectID, locality).Take(50).ToList();
 
                 foreach (var ev in events)
                 {
