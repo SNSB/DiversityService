@@ -7,11 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
-
 namespace DiversityService
 {
-    static class CredentialsExtensions
+    internal static class CredentialsExtensions
     {
         public static Diversity GetConnection(this UserCredentials This, string repository = null)
         {
@@ -22,15 +20,18 @@ namespace DiversityService
     }
 
     public partial class DiversityService : IDiversityService
-    {       
+    {
+        static DiversityService()
+        {
+            SqlServerTypes.Utilities.LoadNativeAssemblies(AppDomain.CurrentDomain.BaseDirectory);
+        }
 
         #region Get
 
         public IEnumerable<Term> GetStandardVocabulary(UserCredentials login)
         {
-
             IEnumerable<Term> linqTerms;
-            using (var db = login.GetConnection())         
+            using (var db = login.GetConnection())
             {
                 linqTerms =
                 Enumerable.Concat(
@@ -41,12 +42,11 @@ namespace DiversityService
                     ).ToList();
             }
             return linqTerms;
-
         }
 
         public IEnumerable<Project> GetProjectsForUser(UserCredentials login)
-        {  
-            if(string.IsNullOrWhiteSpace(login.Repository))
+        {
+            if (string.IsNullOrWhiteSpace(login.Repository))
                 return Enumerable.Empty<Project>();
             using (var db = login.GetConnection())
             {
@@ -64,20 +64,20 @@ namespace DiversityService
                 {
                     return Enumerable.Empty<Project>();
                 }
-            }            
+            }
         }
 
         public IEnumerable<AnalysisTaxonomicGroup> GetAnalysisTaxonomicGroupsForProject(int projectID, UserCredentials login)
         {
             using (var db = login.GetConnection())
             {
-                var atgs = new Queue<AnalysisTaxonomicGroup>(analysisTaxonomicGroupsForProject(projectID,db));                    
+                var atgs = new Queue<AnalysisTaxonomicGroup>(analysisTaxonomicGroupsForProject(projectID, db));
                 var flattened = new HashSet<AnalysisTaxonomicGroup>();
-                var analyses = analysesForProject(projectID,db).ToLookup(an => an.AnalysisParentID);
+                var analyses = analysesForProject(projectID, db).ToLookup(an => an.AnalysisParentID);
 
                 while (atgs.Any())
                 {
-                    var atg = atgs.Dequeue();                    
+                    var atg = atgs.Dequeue();
                     if (flattened.Add(atg)) //added just now -> queue children
                     {
                         if (analyses.Contains(atg.AnalysisID))
@@ -102,6 +102,7 @@ namespace DiversityService
                 return res;
             }
         }
+
         public IEnumerable<Model.AnalysisResult> GetAnalysisResultsForProject(int projectID, UserCredentials login)
         {
             using (var db = login.GetConnection())
@@ -123,10 +124,9 @@ namespace DiversityService
             {
                 return null;
             }
-
         }
 
-        private static readonly UserCredentials TNT_Login = new UserCredentials() { LoginName = "TNT", Password = "mu7idSwg", Repository="DiversityMobile" };
+        private static readonly UserCredentials TNT_Login = new UserCredentials() { LoginName = "TNT", Password = "mu7idSwg", Repository = "DiversityMobile" };
 
         public IEnumerable<Model.TaxonList> GetTaxonListsForUser(UserCredentials login)
         {
@@ -134,8 +134,8 @@ namespace DiversityService
             using (var db = login.GetConnection(CATALOG_DIVERSITYMOBILE))
             {
                 result.AddRange(
-                    taxonListsForUser(login.LoginName,db)
-                    .Select(l => {l.IsPublicList = false; return l;})
+                    taxonListsForUser(login.LoginName, db)
+                    .Select(l => { l.IsPublicList = false; return l; })
                     );
             }
             var publicTaxa = ServiceConfiguration.PublicTaxa;
@@ -148,7 +148,7 @@ namespace DiversityService
             }
             return result;
         }
-      
+
         public IEnumerable<TaxonName> DownloadTaxonList(TaxonList list, int page, UserCredentials login)
         {
             Diversity db;
@@ -160,17 +160,17 @@ namespace DiversityService
             else
                 db = login.GetConnection(CATALOG_DIVERSITYMOBILE);
 
-            return loadTablePaged<Model.TaxonName>(list.Table, page, db);                   
+            return loadTablePaged<Model.TaxonName>(list.Table, page, db);
         }
 
         public IEnumerable<Model.Property> GetPropertiesForUser(UserCredentials login)
         {
             var propsForUser = propertyListsForUser(login).ToDictionary(pl => pl.PropertyID);
-            
+
             using (var db = login.GetConnection())
             {
                 return getProperties(db).Where(p => propsForUser.ContainsKey(p.PropertyID)).ToList();
-            }            
+            }
         }
 
         public IEnumerable<Model.PropertyValue> DownloadPropertyNames(Property p, int page, UserCredentials login)
@@ -179,7 +179,7 @@ namespace DiversityService
             PropertyList list;
             if (propsForUser.TryGetValue(p.PropertyID, out list))
             {
-                return loadTablePaged<Model.PropertyValue>(list.Table, page, login.GetConnection(CATALOG_DIVERSITYMOBILE));                
+                return loadTablePaged<Model.PropertyValue>(list.Table, page, login.GetConnection(CATALOG_DIVERSITYMOBILE));
             }
             else
                 return Enumerable.Empty<Model.PropertyValue>();
@@ -190,9 +190,9 @@ namespace DiversityService
             using (var db = login.GetConnection())
             {
                 return getQualifications(db)
-                    .Select(q => 
+                    .Select(q =>
                         {
-                            if(string.IsNullOrWhiteSpace(q.DisplayText))
+                            if (string.IsNullOrWhiteSpace(q.DisplayText))
                             {
                                 q.DisplayText = "no qualifier";
                             }
@@ -201,14 +201,13 @@ namespace DiversityService
                     .ToList();
             }
         }
-       
-        #endregion
+
+        #endregion Get
 
         #region utility
 
         public IEnumerable<Repository> GetRepositories(UserCredentials login)
-        {           
-
+        {
             List<Repository> result = new List<Repository>();
 
             Parallel.ForEach(Configuration.ServiceConfiguration.Repositories, repo =>
@@ -231,8 +230,7 @@ namespace DiversityService
 
             return result;
         }
-        #endregion
 
-        
+        #endregion utility
     }
 }

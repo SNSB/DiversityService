@@ -1,8 +1,10 @@
 ﻿using DiversityORM;
 using DiversityPhone.Model;
 using DiversityService.Model;
+using Microsoft.SqlServer.Types;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 
 namespace DiversityService
@@ -17,9 +19,44 @@ namespace DiversityService
             }
         }
 
+        private static IEnumerable<Localization> EnumeratePoints(SqlGeography geo)
+        {
+            var pointCount = geo.STNumPoints().Value;
+            for (int i = 1; i <= pointCount; ++i)
+            {
+                var pt = geo.STPointN(i);
+                yield return new Localization()
+                    {
+                        Altitude = (pt.HasZ) ? pt.Z.Value : null as double?,
+                        Longitude = pt.Long.Value,
+                        Latitude = pt.Lat.Value
+                    };
+            }
+        }
+
         public IEnumerable<Localization> LocalizationsForSeries(int collectionSeriesID, UserCredentials login)
         {
-            //Maybe via functions?
+            try
+            {
+                using (var db = login.GetConnection())
+                {
+                    var sql =
+                    new PetaPoco.Sql()
+                            .Select("[Geography]")
+                            .From("[CollectionEventSeries]")
+                            .Where("[SeriesID] = @0", collectionSeriesID);
+
+                    var geo = db
+                        .ExecuteScalar<SqlGeography>(
+                        sql
+                        );
+
+                    return EnumeratePoints(geo).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+            }
             return Enumerable.Empty<Localization>();
         }
 
