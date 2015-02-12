@@ -4,6 +4,7 @@ using DiversityService.Configuration;
 using DiversityService.Model;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,7 +24,7 @@ namespace DiversityService
     {
         static DiversityService()
         {
-            SqlServerTypes.Utilities.LoadNativeAssemblies(AppDomain.CurrentDomain.BaseDirectory);
+            SqlServerTypes.Utilities.LoadNativeAssemblies(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin"));
         }
 
         #region Get
