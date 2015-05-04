@@ -9,14 +9,17 @@
     <Repository name="Bayreuth TestServer" >
       <Server address="btn4nv38.inf.uni-bayreuth.de" port="14330" />
       <Catalog>DiversityCollection</Catalog>
+      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <Repository name="Test">
       <Server address="development.diversityworkbench.de" port="5432" />
       <Catalog>DiversityCollection_Test</Catalog>
+      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <Repository name="DiversityCollection Monitoring" >
       <Server address="141.84.65.107" port="5432" />
       <Catalog>DiversityCollection_Monitoring</Catalog>
+      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <!--Repository name="DiversityCollection">
       <Server address="141.84.65.107" port="5432" />

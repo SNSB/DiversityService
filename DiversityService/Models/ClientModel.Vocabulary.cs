@@ -35,12 +35,10 @@ namespace DiversityService.Model
 
     public class Property
     {
-        //Read-Only
-
+        [Column("PropertyID")]
         public int PropertyID { get; set; }
-        //public string PropertyName { get; set; }
+        [Column("DisplayText")]
         public string DisplayText { get; set; }
-        //public string Description { get; set; }        
     }
 
     public class PropertyValue
@@ -54,12 +52,10 @@ namespace DiversityService.Model
 
     }
 
-    public class PropertyList
+    public class PropertyList : Property
     {
         [Column("DataSource")]
         public string Table { get; set; }
-        [Column("PropertyID")]
-        public int PropertyID { get; set; }
     }
 
     public class AnalysisTaxonomicGroup
@@ -101,6 +97,8 @@ namespace DiversityService.Model
     [ExplicitColumns]
     public class TaxonList
     {
+        [Column("ListID")]
+        public int Id { get; set; }
         [Column("DataSource")]
         public string Table { get; set; }
         [Column("TaxonomicGroup")]

@@ -16,6 +16,7 @@
     <xs:all>
       <xs:element name="Server" type="mstns:Server"/>
       <xs:element name="Catalog" type="xs:string"/>
+      <xs:element name="TermsCatalog" type="xs:string"/>
     </xs:all>
     <xs:attribute name="name" type="xs:string" use="required"/>    
   </xs:complexType>

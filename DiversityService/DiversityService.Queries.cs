@@ -10,7 +10,7 @@ namespace DiversityService
 {
     public partial class DiversityService
     {
-        private const string CATALOG_DIVERSITYMOBILE = "DiversityMobile";
+        private const int PAGE_SIZE = 1000;
 
         private static IEnumerable<AnalysisTaxonomicGroup> analysisTaxonomicGroupsForProject(int projectID, Diversity db)
         {
@@ -22,9 +22,9 @@ namespace DiversityService
             return db.Query<TaxonList>("FROM [TaxonListsForUser](@0) AS [TaxonList]", loginName);
         }
 
-        private static IEnumerable<TaxonList> taxonListsForUser(Diversity db)
+        private static IEnumerable<TaxonName> taxaFromListAndPage(TaxonList list, int page, Diversity db)
         {
-            return db.Query<TaxonList>("FROM [TaxonListsForUser]() AS [TaxonList]");
+            return db.Page<TaxonName>(page, PAGE_SIZE, "FROM [DiversityMobile_TaxonNames(@0) AS [TaxonName]", list.Id).Items;
         }
 
         private static IEnumerable<Analysis> analysesForProject(int projectID, Diversity db)
@@ -37,9 +37,9 @@ namespace DiversityService
             return db.Query<AnalysisResult>("FROM [DiversityMobile_AnalysisResultForProject](@0) AS [AnalysisResult]", projectID);
         }
 
-        private static IEnumerable<PropertyList> propertyListsForUser(UserCredentials login)
+        private static IEnumerable<PropertyList> propertyListsForUser(UserCredentials login, Diversity db)
         {
-            return login.GetConnection(CATALOG_DIVERSITYMOBILE).Query<PropertyList>("FROM [TermsListsForUser](@0) AS [PropertyList]", login.LoginName);
+            return db.Query<PropertyList>("FROM [DiversityMobile_TermsListsForUser](@0) AS [PropertyList]", login.LoginName);
         }
 
         private static IEnumerable<Property> getProperties(Diversity db)
@@ -109,8 +109,8 @@ namespace DiversityService
             var sql = PetaPoco.Sql.Builder
                 .From(string.Format("[dbo].[{0}] AS [{1}]", table, typeof(T).Name))
                 .SQL;
-            return db.Page<T>(page, 1000, sql).Items;
-        }       
+            return db.Page<T>(page, PAGE_SIZE, sql).Items;
+        }
 
     }
 }

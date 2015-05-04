@@ -20,6 +20,9 @@
         IEnumerable<Repository> GetRepositories(UserCredentials login);
 
         [OperationContract]
+        bool ValidateLogin(UserCredentials login);
+
+        [OperationContract]
         IEnumerable<Qualification> GetQualifications(UserCredentials login);
 
         [OperationContract]
