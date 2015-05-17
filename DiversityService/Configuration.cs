@@ -21,14 +21,13 @@ namespace DiversityService.Configuration
 {
     using DiversityServiceConfiguration;
 
-
-
-    class ServiceConfiguration
+    internal class ServiceConfiguration
     {
-        static ServiceConfiguration _instance;
-        static Configuration _cfg;
-        static IEnumerable<Repository> _repos;
-        static PublicTaxonConfig _public_taxa;
+        private static ServiceConfiguration _instance;
+        private static Configuration _cfg;
+        private static IEnumerable<Repository> _repos;
+        private static ServerLoginCatalog _public_taxa;
+        private static ServerLoginCatalog _scientific_terms;
 
         public static IEnumerable<Repository> Repositories
         {
@@ -38,11 +37,19 @@ namespace DiversityService.Configuration
             }
         }
 
-        public static PublicTaxonConfig PublicTaxa
+        public static ServerLoginCatalog PublicTaxa
         {
             get
             {
                 return _public_taxa;
+            }
+        }
+
+        public static ServerLoginCatalog ScientificTerms
+        {
+            get
+            {
+                return _scientific_terms;
             }
         }
 
@@ -56,6 +63,7 @@ namespace DiversityService.Configuration
             _cfg = Configuration.Load(System.Web.Hosting.HostingEnvironment.MapPath(@"~\DiversityServiceConfiguration.xml"));
             _repos = _cfg.Repositories.Repository;
             _public_taxa = _cfg.PublicTaxonConfig;
+            _scientific_terms = _cfg.ScientificTermsConfig;
         }
 
         static ServiceConfiguration()

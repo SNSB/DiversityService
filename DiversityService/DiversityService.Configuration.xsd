@@ -8,47 +8,44 @@
 >
 
   <xs:complexType name="Server">
-    <xs:attribute name="address" type="xs:string" use="required"/>
-    <xs:attribute name="port" type="xs:int" use="required"/>
+    <xs:attribute name="address" type="xs:string" use="required" />
+    <xs:attribute name="port" type="xs:int" use="required" />
   </xs:complexType>
-  
+
   <xs:complexType name="Repository">
     <xs:all>
-      <xs:element name="Server" type="mstns:Server"/>
-      <xs:element name="Catalog" type="xs:string"/>
-      <xs:element name="TermsCatalog" type="xs:string"/>
+      <xs:element name="Server" type="mstns:Server" />
+      <xs:element name="Catalog" type="xs:string" />      
     </xs:all>
-    <xs:attribute name="name" type="xs:string" use="required"/>    
+    <xs:attribute name="name" type="xs:string" use="required" />
   </xs:complexType>
 
   <xs:complexType name="Login">
-    <xs:attribute name="user" type="xs:string" use="required"/>
-    <xs:attribute name="password" type="xs:string" use="required"/>    
+    <xs:attribute name="user" type="xs:string" use="required" />
+    <xs:attribute name="password" type="xs:string" use="required" />
   </xs:complexType>
 
-  <xs:complexType name="PublicTaxonConfig">
+  <xs:complexType name="ServerLoginCatalog">
     <xs:sequence>
-      <xs:element name="Server" type="mstns:Server"/>
-      <xs:element name="Login" type="mstns:Login"/>
-      <xs:element name="Catalog" type="xs:string"/>
+      <xs:element name="Server" type="mstns:Server" />
+      <xs:element name="Login" type="mstns:Login" />
+      <xs:element name="Catalog" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
 
-
-
   <xs:complexType name="ConfigType">
     <xs:sequence>
-      <xs:element name="PublicTaxonConfig" type="mstns:PublicTaxonConfig"/>
-
+      <xs:element name="PublicTaxonConfig" type="mstns:ServerLoginCatalog" />
+      <xs:element name="ScientificTermsConfig" type="mstns:ServerLoginCatalog" />
       <xs:element name="Repositories">
         <xs:complexType>
           <xs:sequence minOccurs="0" maxOccurs="unbounded">
-            <xs:element name="Repository" type="mstns:Repository"/>
+            <xs:element name="Repository" type="mstns:Repository" />
           </xs:sequence>
         </xs:complexType>
       </xs:element>
     </xs:sequence>
   </xs:complexType>
 
-  <xs:element name="Configuration" type="mstns:ConfigType"/>
+  <xs:element name="Configuration" type="mstns:ConfigType" />
 </xs:schema>

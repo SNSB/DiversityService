@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace DiversityService
 {
     public partial class DiversityService
@@ -19,12 +18,12 @@ namespace DiversityService
 
         private static IEnumerable<TaxonList> taxonListsForUser(string loginName, Diversity db)
         {
-            return db.Query<TaxonList>("FROM [TaxonListsForUser](@0) AS [TaxonList]", loginName);
+            return db.Query<TaxonList>("FROM [DiversityMobile_TaxonListsForUser](@0) AS [TaxonList]", loginName);
         }
 
         private static IEnumerable<TaxonName> taxaFromListAndPage(TaxonList list, int page, Diversity db)
         {
-            return db.Page<TaxonName>(page, PAGE_SIZE, "FROM [DiversityMobile_TaxonNames(@0) AS [TaxonName]", list.Id).Items;
+            return db.Page<TaxonName>(page, PAGE_SIZE, "FROM [DiversityMobile_TaxonList](@0) AS [TaxonName]", list.Id).Items;
         }
 
         private static IEnumerable<Analysis> analysesForProject(int projectID, Diversity db)
@@ -42,9 +41,9 @@ namespace DiversityService
             return db.Query<PropertyList>("FROM [DiversityMobile_TermsListsForUser](@0) AS [PropertyList]", login.LoginName);
         }
 
-        private static IEnumerable<Property> getProperties(Diversity db)
+        private static IEnumerable<PropertyValue> propertyValuesFromList(int propertyId, int page, Diversity db)
         {
-            return db.Query<Property>("FROM [Property] AS [Property]");
+            return db.Page<PropertyValue>(page, PAGE_SIZE, "FROM [DiversityMobile_TermsList](@0) AS [PropertyValue]", propertyId).Items;
         }
 
         private static IEnumerable<Qualification> getQualifications(Diversity db)
@@ -54,7 +53,7 @@ namespace DiversityService
 
         private static Event getEvent(Diversity db, int DiversityCollectionID)
         {
-            Event ev=db.SingleOrDefault<Event>("FROM CollectionEvent WHERE CollectionEventID=@0", DiversityCollectionID);
+            Event ev = db.SingleOrDefault<Event>("FROM CollectionEvent WHERE CollectionEventID=@0", DiversityCollectionID);
             IEnumerable<CollectionEventLocalisation> cel_List = getLocalisationForEvent(db, DiversityCollectionID);
             foreach (CollectionEventLocalisation cel in cel_List)
             {
@@ -79,7 +78,7 @@ namespace DiversityService
 
         private static IEnumerable<CollectionEventLocalisation> getLocalisationForEvent(Diversity db, int DiversityCollectionID)
         {
-            return db.Query<CollectionEventLocalisation>("Select LocalisationSystemID, Location1, Location2 FROM CollectionEventLocalisation WHERE CollectionEventID=@0",DiversityCollectionID);
+            return db.Query<CollectionEventLocalisation>("Select LocalisationSystemID, Location1, Location2 FROM CollectionEventLocalisation WHERE CollectionEventID=@0", DiversityCollectionID);
         }
 
         private static IEnumerable<EventProperty> getCollectionPropertyForEvent(Diversity db, int DiversityCollectionID)
@@ -97,20 +96,5 @@ namespace DiversityService
             //Attention: No Geodata
             return db.SingleOrDefault<IdentificationUnitGeoAnalysis>("Select IdentificationUnitID,CollectionSpecimenID,AnalysisDate From IdentificationUnitGeoAnalysis WHERE IdentificationUnitID=@0", DiversityCollectionID);
         }
-
-        private static IEnumerable<T> loadTablePaged<T>(string table, int page, Diversity db)
-        {
-            //TODO Improve SQL Sanitation
-            if (table.Contains(";") ||
-                table.Contains("'") ||
-                table.Contains("\""))
-                return Enumerable.Empty<T>();  //SQL Injection ?
-
-            var sql = PetaPoco.Sql.Builder
-                .From(string.Format("[dbo].[{0}] AS [{1}]", table, typeof(T).Name))
-                .SQL;
-            return db.Page<T>(page, PAGE_SIZE, sql).Items;
-        }
-
     }
 }

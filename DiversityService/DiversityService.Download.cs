@@ -26,11 +26,11 @@ namespace DiversityService
             {
                 var pt = geo.STPointN(i);
                 yield return new Localization()
-                    {
-                        Altitude = (pt.HasZ) ? pt.Z.Value : null as double?,
-                        Longitude = pt.Long.Value,
-                        Latitude = pt.Lat.Value
-                    };
+                {
+                    Altitude = (pt.HasZ) ? pt.Z.Value : null as double?,
+                    Longitude = pt.Long.Value,
+                    Latitude = pt.Lat.Value
+                };
             }
         }
 
@@ -54,7 +54,7 @@ namespace DiversityService
                     return EnumeratePoints(geo).ToList();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
             return Enumerable.Empty<Localization>();
@@ -176,7 +176,5 @@ namespace DiversityService
             }
             return null;
         }
-
-       
     }
 }

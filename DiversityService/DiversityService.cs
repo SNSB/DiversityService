@@ -2,6 +2,7 @@
 using DiversityPhone.Model;
 using DiversityService.Configuration;
 using DiversityService.Model;
+using Splat;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,19 +12,36 @@ namespace DiversityService
 {
     internal static class CredentialsExtensions
     {
-        public static Diversity GetConnection(this UserCredentials This, string repository = null)
+        public static Diversity GetConnection(this UserCredentials This, string catalog = null)
         {
-            DiversityServiceConfiguration.Login l = This;
             var repo = Configuration.ServiceConfiguration.RepositoryByName(This.Repository);
-            return new Diversity(l, repo.Server, repository ?? repo.Catalog);
+
+            if (repo == null)
+            {
+                throw new ArgumentException("Repository does not exist.", nameof(This));
+            }
+
+            return new Diversity(This, repo.Server, catalog ?? repo.Catalog);
+        }
+
+        public static Diversity GetConnection(this DiversityServiceConfiguration.ServerLoginCatalog This)
+        {
+            if (This == null)
+            {
+                throw new ArgumentNullException(nameof(This));
+            }
+
+            return new Diversity(This.Login, This.Server, This.Catalog);
         }
     }
 
-    public partial class DiversityService : IDiversityService
+    public partial class DiversityService : IDiversityService, IEnableLogger
     {
         static DiversityService()
         {
             SqlServerTypes.Utilities.LoadNativeAssemblies(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin"));
+
+            InsightsLogger.ConfigureLogging();
         }
 
         #region Get
@@ -126,35 +144,93 @@ namespace DiversityService
             }
         }
 
-        private static readonly UserCredentials TNT_Login = new UserCredentials() { LoginName = "TNT", Password = "mu7idSwg", Repository = "DiversityMobile" };
-
         public IEnumerable<Model.TaxonList> GetTaxonListsForUser(UserCredentials login)
         {
             var result = new List<TaxonList>();
-            using (var db = login.GetConnection())
+
+            try
             {
-                result.AddRange(
-                    taxonListsForUser(login.LoginName, db)
-                    .Select(l => { l.IsPublicList = false; return l; })
-                    );
+                using (var db = login.GetConnection())
+                {
+                    result.AddRange(
+                        taxonListsForUser(login.LoginName, db)
+                        .Select(l => { l.IsPublicList = false; return l; })
+                        );
+                }
             }
-            var publicTaxa = ServiceConfiguration.PublicTaxa;
-            using (var db = new DiversityORM.Diversity(publicTaxa.Login, publicTaxa.Server, publicTaxa.Catalog))
+            catch (Exception ex)
             {
-                result.AddRange(
-                    taxonListsForUser(publicTaxa.Login.user, db)
-                    .Select(l => { l.IsPublicList = true; return l; })
-                    );
+                this.Log().ErrorException("GetPrivateTaxonList", ex);
             }
+
+            try
+            {
+                var publicTaxa = ServiceConfiguration.PublicTaxa;
+                using (var db = new DiversityORM.Diversity(publicTaxa.Login, publicTaxa.Server, publicTaxa.Catalog))
+                {
+                    result.AddRange(
+                        taxonListsForUser(publicTaxa.Login.user, db)
+                        .Select(l => { l.IsPublicList = true; return l; })
+                        );
+                }
+            }
+            catch(Exception ex)
+            {
+                this.Log().ErrorException("GetPublicTaxonList", ex);
+            }
+
             return result;
         }
 
         public IEnumerable<TaxonName> DownloadTaxonList(TaxonList list, int page, UserCredentials login)
         {
-            using (var db = ConnectToDBForList(list, login))
+            if (list != null && FindTaxonListIdIfNecessary(list, login))
             {
-                return taxaFromListAndPage(list, page, db);
+                using (var db = ConnectToDBForList(list, login))
+                {
+                    try
+                    {
+                        var taxa = taxaFromListAndPage(list, page, db);
+
+                        if (!taxa.Any())
+                        {
+                            this.Log().Debug("Empty {2} Taxon list: {0} - {1}", list.Id, list.DisplayText, (list.IsPublicList) ? "public" : "");
+                        }
+
+                        return taxa;
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Log().ErrorException("DownloadTaxonList", ex);
+                    }
+                }
             }
+
+            return Enumerable.Empty<TaxonName>();
+        }
+
+        private bool FindTaxonListIdIfNecessary(TaxonList list, UserCredentials login)
+        {
+            if (list.Id == 0)
+            {
+                // Presumably, the Id was not sent by an older client
+                // without support for it
+                // try to find the list via its other properties
+                var lists = GetTaxonListsForUser(login);
+
+                var bestGuess = (from l in lists
+                                 where l.Table == list.Table
+                                 select l.Id);
+
+                if (!bestGuess.Any())
+                {
+                    return false;
+                }
+
+                list.Id = bestGuess.First();
+            }
+
+            return true;
         }
 
         private Diversity ConnectToDBForList(TaxonList list, UserCredentials login)
@@ -170,9 +246,21 @@ namespace DiversityService
             }
         }
 
+        public static Diversity GetTermsConnection()
+        {
+            var repo = Configuration.ServiceConfiguration.ScientificTerms;
+
+            if (repo == null)
+            {
+                throw new InvalidOperationException("No ScientificTerms configuration.");
+            }
+
+            return repo.GetConnection();
+        }
+
         public IEnumerable<Model.Property> GetPropertiesForUser(UserCredentials login)
         {
-            using (var db = login.GetConnection())
+            using (var db = GetTermsConnection())
             {
                 return propertyListsForUser(login, db);
             }
@@ -180,13 +268,15 @@ namespace DiversityService
 
         public IEnumerable<Model.PropertyValue> DownloadPropertyNames(Property p, int page, UserCredentials login)
         {
-            using (var db = login.GetConnection())
+            using (var db = GetTermsConnection())
             {
-                var propsForUser = propertyListsForUser(login, db).ToDictionary(pl => pl.PropertyID);
+                var propsForUser = propertyListsForUser(login, db)
+                    .ToDictionary(pl => pl.PropertyID);
+
                 PropertyList list;
                 if (propsForUser.TryGetValue(p.PropertyID, out list))
                 {
-                    return loadTablePaged<Model.PropertyValue>(list.Table, page, db);
+                    return propertyValuesFromList(list.PropertyID, page, db);
                 }
                 else
                 {
@@ -241,13 +331,6 @@ namespace DiversityService
             }
 
             return false;
-        }
-
-        private DiversityServiceConfiguration.Repository GetRepositoryByName(string name)
-        {
-            return (from repo in Configuration.ServiceConfiguration.Repositories
-                    where repo.name == name
-                    select repo).FirstOrDefault();
         }
 
         #endregion utility

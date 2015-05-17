@@ -89,7 +89,7 @@ namespace DiversityServiceConfiguration {
     
     /// <summary>
     /// <para>
-    /// Regular expression: (Server, Catalog, TermsCatalog)
+    /// Regular expression: (Server, Catalog)
     /// </para>
     /// </summary>
     public partial class Repository : XTypedElement, IXMetaData {
@@ -105,7 +105,7 @@ namespace DiversityServiceConfiguration {
         
         /// <summary>
         /// <para>
-        /// Regular expression: (Server, Catalog, TermsCatalog)
+        /// Regular expression: (Server, Catalog)
         /// </para>
         /// </summary>
         public Repository() {
@@ -116,7 +116,7 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (Server, Catalog, TermsCatalog)
+        /// Regular expression: (Server, Catalog)
         /// </para>
         /// </summary>
         public Server Server {
@@ -134,7 +134,7 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (Server, Catalog, TermsCatalog)
+        /// Regular expression: (Server, Catalog)
         /// </para>
         /// </summary>
         public string Catalog {
@@ -144,24 +144,6 @@ namespace DiversityServiceConfiguration {
             }
             set {
                 this.SetElement(XName.Get("Catalog", "DiversityServiceConfiguration"), value, XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String).Datatype);
-            }
-        }
-        
-        /// <summary>
-        /// <para>
-        /// Occurrence: required
-        /// </para>
-        /// <para>
-        /// Regular expression: (Server, Catalog, TermsCatalog)
-        /// </para>
-        /// </summary>
-        public string TermsCatalog {
-            get {
-                XElement x = this.GetElement(XName.Get("TermsCatalog", "DiversityServiceConfiguration"));
-                return XTypedServices.ParseValue<string>(x, XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String).Datatype);
-            }
-            set {
-                this.SetElement(XName.Get("TermsCatalog", "DiversityServiceConfiguration"), value, XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String).Datatype);
             }
         }
         
@@ -215,7 +197,6 @@ namespace DiversityServiceConfiguration {
         private static void BuildElementDictionary() {
             localElementDictionary.Add(XName.Get("Server", "DiversityServiceConfiguration"), typeof(Server));
             localElementDictionary.Add(XName.Get("Catalog", "DiversityServiceConfiguration"), typeof(string));
-            localElementDictionary.Add(XName.Get("TermsCatalog", "DiversityServiceConfiguration"), typeof(string));
         }
         
         ContentModelEntity IXMetaData.GetContentModel() {
@@ -295,7 +276,7 @@ namespace DiversityServiceConfiguration {
     /// Regular expression: (Server, Login, Catalog)
     /// </para>
     /// </summary>
-    public partial class PublicTaxonConfig : XTypedElement, IXMetaData {
+    public partial class ServerLoginCatalog : XTypedElement, IXMetaData {
         
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         static Dictionary<XName, System.Type> localElementDictionary = new Dictionary<XName, System.Type>();
@@ -303,9 +284,9 @@ namespace DiversityServiceConfiguration {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static ContentModelEntity contentModel;
         
-         public static explicit operator PublicTaxonConfig(XElement xe) { return XTypedServices.ToXTypedElement<PublicTaxonConfig>(xe,LinqToXsdTypeManager.Instance as ILinqToXsdTypeManager); }
+         public static explicit operator ServerLoginCatalog(XElement xe) { return XTypedServices.ToXTypedElement<ServerLoginCatalog>(xe,LinqToXsdTypeManager.Instance as ILinqToXsdTypeManager); }
         
-        static PublicTaxonConfig() {
+        static ServerLoginCatalog() {
             BuildElementDictionary();
             contentModel = new SequenceContentModelEntity(new NamedContentModelEntity(XName.Get("Server", "DiversityServiceConfiguration")), new NamedContentModelEntity(XName.Get("Login", "DiversityServiceConfiguration")), new NamedContentModelEntity(XName.Get("Catalog", "DiversityServiceConfiguration")));
         }
@@ -315,7 +296,7 @@ namespace DiversityServiceConfiguration {
         /// Regular expression: (Server, Login, Catalog)
         /// </para>
         /// </summary>
-        public PublicTaxonConfig() {
+        public ServerLoginCatalog() {
         }
         
         /// <summary>
@@ -382,7 +363,7 @@ namespace DiversityServiceConfiguration {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         XName IXMetaData.SchemaName {
             get {
-                return XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration");
+                return XName.Get("ServerLoginCatalog", "DiversityServiceConfiguration");
             }
         }
         
@@ -401,7 +382,7 @@ namespace DiversityServiceConfiguration {
         }
         
         public override XTypedElement Clone() {
-            return XTypedServices.CloneXTypedElement<PublicTaxonConfig>(this);
+            return XTypedServices.CloneXTypedElement<ServerLoginCatalog>(this);
         }
         
         private static void BuildElementDictionary() {
@@ -417,7 +398,7 @@ namespace DiversityServiceConfiguration {
     
     /// <summary>
     /// <para>
-    /// Regular expression: (PublicTaxonConfig, Repositories)
+    /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
     /// </para>
     /// </summary>
     public partial class ConfigType : XTypedElement, IXMetaData {
@@ -432,12 +413,12 @@ namespace DiversityServiceConfiguration {
         
         static ConfigType() {
             BuildElementDictionary();
-            contentModel = new SequenceContentModelEntity(new NamedContentModelEntity(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration")), new NamedContentModelEntity(XName.Get("Repositories", "DiversityServiceConfiguration")));
+            contentModel = new SequenceContentModelEntity(new NamedContentModelEntity(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration")), new NamedContentModelEntity(XName.Get("ScientificTermsConfig", "DiversityServiceConfiguration")), new NamedContentModelEntity(XName.Get("Repositories", "DiversityServiceConfiguration")));
         }
         
         /// <summary>
         /// <para>
-        /// Regular expression: (PublicTaxonConfig, Repositories)
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
         /// </para>
         /// </summary>
         public ConfigType() {
@@ -448,13 +429,13 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (PublicTaxonConfig, Repositories)
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
         /// </para>
         /// </summary>
-        public PublicTaxonConfig PublicTaxonConfig {
+        public ServerLoginCatalog PublicTaxonConfig {
             get {
                 XElement x = this.GetElement(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration"));
-                return ((PublicTaxonConfig)(x));
+                return ((ServerLoginCatalog)(x));
             }
             set {
                 this.SetElement(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration"), value);
@@ -466,7 +447,25 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (PublicTaxonConfig, Repositories)
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
+        /// </para>
+        /// </summary>
+        public ServerLoginCatalog ScientificTermsConfig {
+            get {
+                XElement x = this.GetElement(XName.Get("ScientificTermsConfig", "DiversityServiceConfiguration"));
+                return ((ServerLoginCatalog)(x));
+            }
+            set {
+                this.SetElement(XName.Get("ScientificTermsConfig", "DiversityServiceConfiguration"), value);
+            }
+        }
+        
+        /// <summary>
+        /// <para>
+        /// Occurrence: required
+        /// </para>
+        /// <para>
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
         /// </para>
         /// </summary>
         public RepositoriesLocalType Repositories {
@@ -512,7 +511,8 @@ namespace DiversityServiceConfiguration {
         }
         
         private static void BuildElementDictionary() {
-            localElementDictionary.Add(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration"), typeof(PublicTaxonConfig));
+            localElementDictionary.Add(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration"), typeof(ServerLoginCatalog));
+            localElementDictionary.Add(XName.Get("ScientificTermsConfig", "DiversityServiceConfiguration"), typeof(ServerLoginCatalog));
             localElementDictionary.Add(XName.Get("Repositories", "DiversityServiceConfiguration"), typeof(RepositoriesLocalType));
         }
         
@@ -655,10 +655,10 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (PublicTaxonConfig, Repositories)
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
         /// </para>
         /// </summary>
-        public PublicTaxonConfig PublicTaxonConfig {
+        public ServerLoginCatalog PublicTaxonConfig {
             get {
                 return this.ContentField.PublicTaxonConfig;
             }
@@ -672,7 +672,24 @@ namespace DiversityServiceConfiguration {
         /// Occurrence: required
         /// </para>
         /// <para>
-        /// Regular expression: (PublicTaxonConfig, Repositories)
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
+        /// </para>
+        /// </summary>
+        public ServerLoginCatalog ScientificTermsConfig {
+            get {
+                return this.ContentField.ScientificTermsConfig;
+            }
+            set {
+                this.ContentField.ScientificTermsConfig = value;
+            }
+        }
+        
+        /// <summary>
+        /// <para>
+        /// Occurrence: required
+        /// </para>
+        /// <para>
+        /// Regular expression: (PublicTaxonConfig, ScientificTermsConfig, Repositories)
         /// </para>
         /// </summary>
         public DiversityServiceConfiguration.ConfigType.RepositoriesLocalType Repositories {
@@ -816,7 +833,7 @@ namespace DiversityServiceConfiguration {
             typeDictionary.Add(XName.Get("Server", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.Server));
             typeDictionary.Add(XName.Get("Repository", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.Repository));
             typeDictionary.Add(XName.Get("Login", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.Login));
-            typeDictionary.Add(XName.Get("PublicTaxonConfig", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.PublicTaxonConfig));
+            typeDictionary.Add(XName.Get("ServerLoginCatalog", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.ServerLoginCatalog));
             typeDictionary.Add(XName.Get("ConfigType", "DiversityServiceConfiguration"), typeof(global::DiversityServiceConfiguration.ConfigType));
         }
         

@@ -1,25 +1,27 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Configuration xmlns="DiversityServiceConfiguration">
   <PublicTaxonConfig>
+    <Server address="development.diversityworkbench.de" port="5432"/>
+    <Login user="" password="" />
+    <Catalog>DiversityTaxonNames_Fungi_Test</Catalog>
+  </PublicTaxonConfig>
+  <ScientificTermsConfig>
     <Server address="tnt.diversityworkbench.de" port="5432"/>
     <Login user="TNT" password="mu7idSwg" />
-    <Catalog>DiversityMobile</Catalog>
-  </PublicTaxonConfig>
+    <Catalog>DiversityScientificTerms_TNT</Catalog>
+  </ScientificTermsConfig>
   <Repositories>
     <Repository name="Bayreuth TestServer" >
       <Server address="btn4nv38.inf.uni-bayreuth.de" port="14330" />
       <Catalog>DiversityCollection</Catalog>
-      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <Repository name="Test">
       <Server address="development.diversityworkbench.de" port="5432" />
       <Catalog>DiversityCollection_Test</Catalog>
-      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <Repository name="DiversityCollection Monitoring" >
       <Server address="141.84.65.107" port="5432" />
       <Catalog>DiversityCollection_Monitoring</Catalog>
-      <TermsCatalog>DiversityScientificTerms</TermsCatalog>
     </Repository>
     <!--Repository name="DiversityCollection">
       <Server address="141.84.65.107" port="5432" />
