@@ -19,7 +19,7 @@
       <Server address="development.diversityworkbench.de" port="5432" />
       <Catalog>DiversityCollection_Test</Catalog>
     </Repository>
-    <Repository name="DiversityCollection Monitoring" >
+    <Repository name="DiversityCollection Monitoring">
       <Server address="141.84.65.107" port="5432" />
       <Catalog>DiversityCollection_Monitoring</Catalog>
     </Repository>

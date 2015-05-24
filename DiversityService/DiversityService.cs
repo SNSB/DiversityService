@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Caching;
 
 namespace DiversityService
 {
@@ -37,11 +38,13 @@ namespace DiversityService
 
     public partial class DiversityService : IDiversityService, IEnableLogger
     {
+        private readonly MemoryCache Cache = MemoryCache.Default;
+
         static DiversityService()
         {
             SqlServerTypes.Utilities.LoadNativeAssemblies(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin"));
 
-            InsightsLogger.ConfigureLogging();
+            InsightsLogging.ConfigureLogging();
         }
 
         #region Get
@@ -146,16 +149,32 @@ namespace DiversityService
 
         public IEnumerable<Model.TaxonList> GetTaxonListsForUser(UserCredentials login)
         {
-            var result = new List<TaxonList>();
+            // Check Cache
+            var cacheKey = string.Format("{0}_{1}_{2}", login.LoginName, login.Repository, CACHE_TAXON_LISTS);
+            var cached = Cache.Get(cacheKey) as IEnumerable<Model.TaxonList>;
 
+            if (cached != null)
+            {
+                return cached;
+            }
+            
+            // Find available DTN Module Databases
+            // and query them for lists
+            var result = new List<TaxonList>();
+            
+            // First in the connected Repository
             try
             {
                 using (var db = login.GetConnection())
                 {
-                    result.AddRange(
-                        taxonListsForUser(login.LoginName, db)
-                        .Select(l => { l.IsPublicList = false; return l; })
-                        );
+                    var lists = enumerateTaxonListsFromServer(db, login.Repository, login.LoginName)
+                        .Select(x =>
+                        {
+                            x.IsPublicList = false;
+                            return x;
+                        });
+
+                    result.AddRange(lists);
                 }
             }
             catch (Exception ex)
@@ -163,15 +182,20 @@ namespace DiversityService
                 this.Log().ErrorException("GetPrivateTaxonList", ex);
             }
 
+            // Then in the public Repository
             try
             {
                 var publicTaxa = ServiceConfiguration.PublicTaxa;
                 using (var db = new DiversityORM.Diversity(publicTaxa.Login, publicTaxa.Server, publicTaxa.Catalog))
                 {
-                    result.AddRange(
-                        taxonListsForUser(publicTaxa.Login.user, db)
-                        .Select(l => { l.IsPublicList = true; return l; })
-                        );
+                    var lists = enumerateTaxonListsFromServer(db, REPOSITORY_PUBLICTAXA, publicTaxa.Login.user)
+                        .Select(x =>
+                        {
+                            x.IsPublicList = true;
+                            return x;
+                        });
+                    
+                    result.AddRange(lists);
                 }
             }
             catch(Exception ex)
@@ -179,12 +203,15 @@ namespace DiversityService
                 this.Log().ErrorException("GetPublicTaxonList", ex);
             }
 
+            // Add to Cache
+            Cache.Add(cacheKey, result, getCacheExpiration());
+
             return result;
         }
 
         public IEnumerable<TaxonName> DownloadTaxonList(TaxonList list, int page, UserCredentials login)
         {
-            if (list != null && FindTaxonListIdIfNecessary(list, login))
+            if (list != null && ReplaceWithKnownList(ref list, login))
             {
                 using (var db = ConnectToDBForList(list, login))
                 {
@@ -192,7 +219,7 @@ namespace DiversityService
                     {
                         var taxa = taxaFromListAndPage(list, page, db);
 
-                        if (!taxa.Any())
+                        if (page == 0 && !taxa.Any())
                         {
                             this.Log().Debug("Empty {2} Taxon list: {0} - {1}", list.Id, list.DisplayText, (list.IsPublicList) ? "public" : "");
                         }
@@ -209,28 +236,36 @@ namespace DiversityService
             return Enumerable.Empty<TaxonName>();
         }
 
-        private bool FindTaxonListIdIfNecessary(TaxonList list, UserCredentials login)
+        private bool ReplaceWithKnownList(ref TaxonList knownList, UserCredentials login)
         {
+            var list = knownList;
+            var lists = GetTaxonListsForUser(login);
+
+            var matches = lists;
+
             if (list.Id == 0)
             {
                 // Presumably, the Id was not sent by an older client
                 // without support for it
                 // try to find the list via its other properties
-                var lists = GetTaxonListsForUser(login);
-
-                var bestGuess = (from l in lists
-                                 where l.Table == list.Table
-                                 select l.Id);
-
-                if (!bestGuess.Any())
-                {
-                    return false;
-                }
-
-                list.Id = bestGuess.First();
+                matches = (from l in matches
+                           where l.Table == list.Table &&
+                                 l.TaxonomicGroup == list.TaxonomicGroup &&
+                                 l.IsPublicList == list.IsPublicList
+                           select l);
+            }
+            else
+            {
+                matches = from l in matches
+                          where l.Id == list.Id
+                          select l;
             }
 
-            return true;
+            list = matches.FirstOrDefault();
+
+            knownList = list;
+
+            return list != null;
         }
 
         private Diversity ConnectToDBForList(TaxonList list, UserCredentials login)
@@ -238,11 +273,11 @@ namespace DiversityService
             if (list.IsPublicList)
             {
                 var taxa = ServiceConfiguration.PublicTaxa;
-                return new Diversity(taxa.Login, taxa.Server, taxa.Catalog);
+                return new Diversity(taxa.Login, taxa.Server, list.Catalog);
             }
             else
             {
-                return login.GetConnection();
+                return login.GetConnection(catalog: list.Catalog);
             }
         }
 

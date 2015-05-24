@@ -107,6 +107,10 @@ namespace DiversityService.Model
         public string DisplayText { get; set; }
 
         public bool IsPublicList { get; set; }
+
+        // Service internal
+        [IgnoreDataMember]
+        internal string Catalog { get; set; }
     }
 
     public class TaxonName

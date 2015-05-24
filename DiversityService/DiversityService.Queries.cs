@@ -1,24 +1,157 @@
-﻿using DiversityORM;
-using DiversityPhone.Model;
-using DiversityService.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿
 
 namespace DiversityService
 {
+    using DiversityORM;
+    using DiversityPhone.Model;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Splat;
+    using System.Diagnostics.Contracts;
+    using global::DiversityService.Model;
+
     public partial class DiversityService
     {
         private const int PAGE_SIZE = 1000;
+
+        private const string REPOSITORY_PUBLICTAXA = "PublicTaxa";
+
+        private const string DIVERSITYMODULE_TAXONNAMES = "DiversityTaxonNames";
+
+        private const string CACHE_MODULES = "MODULES";
+
+        private const string CACHE_TAXON_LISTS = "TAXONLISTS";
+
+        private readonly TimeSpan CACHE_TTL = TimeSpan.FromMinutes(5);
+
+        private DateTimeOffset getCacheExpiration()
+        {
+            return DateTimeOffset.Now.Add(CACHE_TTL);
+        }
+
+        /// <summary>
+        /// Gets a map containing all DiversityWorkbenchModule Databases 
+        /// indexed by type (i.e. DiversityCollection, DiversityTaxonNames etc.)
+        /// </summary>
+        /// <remarks>
+        /// Internally caches the result of the query to avoid iterating through 
+        /// all Databases each time the method is called.
+        /// there is a cache entry for each value of the tuple (serverId, userId)
+        /// </remarks>
+        /// <returns></returns>
+        private IDictionary<string, IEnumerable<string>> getDiversityModules(Diversity db, string serverId, string userId)
+        {
+            Contract.Requires(db != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(serverId));
+            
+            // Check the cache
+            var cacheKey = string.Format("{0}_{1}_{2}", serverId, userId, CACHE_MODULES);
+            var cached = Cache.Get(cacheKey) as IDictionary<string, IEnumerable<string>>;
+
+            if (cached != null)
+            {
+                return cached;
+            }
+
+            // Get Databases
+            IEnumerable<string> databases = Enumerable.Empty<string>();
+            try
+            {
+                databases = db.Query<string>("SELECT name FROM sys.databases").ToList();
+            }
+            catch(Exception ex)
+            {
+                this.Log().ErrorException(string.Format("Selecting Databases from Server: {0}", serverId), ex);
+            }
+
+            var modules = new Dictionary<string, IEnumerable<string>>();
+                       
+            foreach (var dbName in databases)
+            {
+                try
+                {
+                    // Check if the DiversityWorkbenchModule Function exists
+
+                    db.OpenSharedConnection();
+                    db.Connection.ChangeDatabase(dbName);
+
+                    var isModule = db.ExecuteScalar<int>(
+                        string.Format(@"
+                        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END 
+                        FROM   sys.objects
+                        WHERE  object_id = OBJECT_ID(N'[dbo].[DiversityWorkbenchModule]')
+                        AND type IN(N'FN', N'IF', N'TF', N'FS', N'FT')", dbName)) != 0;
+                    
+                    if (!isModule)
+                    {
+                        continue;
+                    }
+
+                    var moduleType = db.ExecuteScalar<string>("SELECT [dbo].[DiversityWorkbenchModule]()");
+
+                    if (!string.IsNullOrWhiteSpace(moduleType))
+                    {
+                        IEnumerable<string> moduleList;
+
+                        // Get existing List or create a new one for this type
+                        if(!modules.TryGetValue(moduleType, out moduleList))
+                        {
+                            moduleList = modules[moduleType] = new List<string>();
+                        }
+
+                        (moduleList as List<string>).Add(dbName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Log().ErrorException("Finding Modules", ex);
+                }
+            }
+
+            // Cache the result
+            Cache.Add(cacheKey, modules, getCacheExpiration());
+
+            return modules;
+        }
+
+        private IEnumerable<TaxonList> enumerateTaxonListsFromServer(Diversity db, string repository, string loginName)
+        {
+            var result = new List<TaxonList>();
+
+            var modulesByType = getDiversityModules(db, repository, loginName);
+
+            IEnumerable<string> dtnInstances;
+
+            if (modulesByType.TryGetValue(DIVERSITYMODULE_TAXONNAMES, out dtnInstances))
+            {
+                foreach (var dtn in dtnInstances)
+                {
+                    var lists = taxonListsForUser(dtn, loginName, db)
+                        .Select(l => 
+                        {
+                            l.Catalog = dtn;
+                            return l;
+                        });
+
+
+                    result.AddRange(lists);
+                }
+            }
+
+            return result;
+        }
 
         private static IEnumerable<AnalysisTaxonomicGroup> analysisTaxonomicGroupsForProject(int projectID, Diversity db)
         {
             return db.Query<AnalysisTaxonomicGroup>("FROM [DiversityMobile_AnalysisTaxonomicGroupsForProject](@0) AS [AnalysisTaxonomicGroup]", projectID);
         }
 
-        private static IEnumerable<TaxonList> taxonListsForUser(string loginName, Diversity db)
+        private static IEnumerable<TaxonList> taxonListsForUser(string catalog, string loginName, Diversity db)
         {
-            return db.Query<TaxonList>("FROM [DiversityMobile_TaxonListsForUser](@0) AS [TaxonList]", loginName);
+            return db.Query<TaxonList>(
+                string.Format("SELECT * FROM [{0}].[dbo].[DiversityMobile_TaxonListsForUser](@0) AS [TaxonList]", catalog),
+                loginName);
         }
 
         private static IEnumerable<TaxonName> taxaFromListAndPage(TaxonList list, int page, Diversity db)
