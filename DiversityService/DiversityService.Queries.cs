@@ -168,8 +168,19 @@ namespace DiversityService
                         {
                             l.Catalog = dtn;
                             return l;
+                        }).Where(l =>
+                        {
+                            // Validate results from The DB
+                            // And filter garbage
+                            if (string.IsNullOrWhiteSpace(l.DisplayText) ||
+                                string.IsNullOrWhiteSpace(l.TaxonomicGroup) ||
+                                l.Id == 0)
+                            {
+                                this.Log().Warn("({0}) Invalid taxon list '{1}' ({3}) in {4} on server {2} encountered", nameof(enumerateTaxonListsFromServer), l.DisplayText, repository, l.Id, dtn);
+                                return false;
+                            }
+                            return true;
                         });
-
 
                     result.AddRange(lists);
                 }
