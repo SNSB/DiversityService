@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Caching;
+using System.Threading.Tasks;
 
 namespace DiversityService
 {
@@ -147,7 +148,7 @@ namespace DiversityService
             }
         }
 
-        public IEnumerable<Model.TaxonList> GetTaxonListsForUser(UserCredentials login)
+        public async Task<IEnumerable<Model.TaxonList>> GetTaxonListsForUser(UserCredentials login)
         {
             // Check Cache
             var cacheKey = string.Format("{0}_{1}_{2}", login.LoginName, login.Repository, CACHE_TAXON_LISTS);
@@ -157,13 +158,15 @@ namespace DiversityService
             {
                 return cached;
             }
+
+            // Indicates, whether the newly calculated result should be cached.
+            var shouldCache = true;
             
             // Find available DTN Module Databases
             // and query them for lists
             var result = new List<TaxonList>();
-            
-            // First in the connected Repository
-            try
+
+            var privateLists = Task.Factory.StartNew(() =>
             {
                 using (var db = login.GetConnection())
                 {
@@ -173,17 +176,11 @@ namespace DiversityService
                             x.IsPublicList = false;
                             return x;
                         });
-
-                    result.AddRange(lists);
+                    return lists.ToList();
                 }
-            }
-            catch (Exception ex)
-            {
-                this.Log().ErrorException("GetPrivateTaxonList", ex);
-            }
+            });
 
-            // Then in the public Repository
-            try
+            var publicLists = Task.Factory.StartNew(() =>
             {
                 var publicTaxa = ServiceConfiguration.PublicTaxa;
                 using (var db = new DiversityORM.Diversity(publicTaxa.Login, publicTaxa.Server, publicTaxa.Catalog))
@@ -194,24 +191,48 @@ namespace DiversityService
                             x.IsPublicList = true;
                             return x;
                         });
-                    
-                    result.AddRange(lists);
+
+                    return lists.ToList();
                 }
-            }
-            catch(Exception ex)
+            });
+
+            var tasks = new[] { privateLists, publicLists };
+            try
             {
-                this.Log().ErrorException("GetPublicTaxonList", ex);
+                await Task.WhenAll(tasks);
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var innerEx in ex.InnerExceptions)
+                {
+                    this.Log().ErrorException(nameof(GetTaxonListsForUser), innerEx);
+                }
+
+                // do not cache an incomplete result
+                shouldCache = false;
             }
 
-            // Add to Cache
-            Cache.Add(cacheKey, result, getCacheExpiration());
+            // Add the results of those tasks that ran to completion
+            foreach(var task in tasks)
+            {
+                if(task.Status == TaskStatus.RanToCompletion)
+                {
+                    result.AddRange(task.Result);
+                }
+            }
+
+            if (shouldCache)
+            {
+                // Add to Cache
+                Cache.Add(cacheKey, result, getCacheExpiration());
+            }
 
             return result;
         }
 
-        public IEnumerable<TaxonName> DownloadTaxonList(TaxonList list, int page, UserCredentials login)
+        public async Task<IEnumerable<TaxonName>> DownloadTaxonList(TaxonList list, int page, UserCredentials login)
         {
-            if (list != null && ReplaceWithKnownList(ref list, login))
+            if ((list = await FindKnownList(list, login)) != null)
             {
                 using (var db = ConnectToDBForList(list, login))
                 {
@@ -236,36 +257,36 @@ namespace DiversityService
             return Enumerable.Empty<TaxonName>();
         }
 
-        private bool ReplaceWithKnownList(ref TaxonList knownList, UserCredentials login)
+        private async Task<TaxonList> FindKnownList(TaxonList clientList, UserCredentials login)
         {
-            var list = knownList;
-            var lists = GetTaxonListsForUser(login);
+            if (clientList == null)
+            {
+                return null;
+            }
+
+            var lists = await GetTaxonListsForUser(login);
 
             var matches = lists;
 
-            if (list.Id == 0)
+            if (clientList.Id == 0)
             {
                 // Presumably, the Id was not sent by an older client
                 // without support for it
                 // try to find the list via its other properties
                 matches = (from l in matches
-                           where l.Table == list.Table &&
-                                 l.TaxonomicGroup == list.TaxonomicGroup &&
-                                 l.IsPublicList == list.IsPublicList
+                           where l.Table == clientList.Table &&
+                                 l.TaxonomicGroup == clientList.TaxonomicGroup &&
+                                 l.IsPublicList == clientList.IsPublicList
                            select l);
             }
             else
             {
                 matches = from l in matches
-                          where l.Id == list.Id
+                          where l.Id == clientList.Id
                           select l;
             }
 
-            list = matches.FirstOrDefault();
-
-            knownList = list;
-
-            return list != null;
+            return matches.FirstOrDefault();
         }
 
         private Diversity ConnectToDBForList(TaxonList list, UserCredentials login)

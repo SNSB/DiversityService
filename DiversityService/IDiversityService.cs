@@ -4,6 +4,7 @@
     using Model;
     using System.Collections.Generic;
     using System.ServiceModel;
+    using System.Threading.Tasks;
 
     [ServiceContract]
     public interface IDiversityService
@@ -86,9 +87,9 @@
         #region DB "DiversityMobile" Attribute SNSB
 
         [OperationContract]
-        IEnumerable<TaxonList> GetTaxonListsForUser(UserCredentials login);
+        Task<IEnumerable<TaxonList>> GetTaxonListsForUser(UserCredentials login);
         [OperationContract]
-        IEnumerable<TaxonName> DownloadTaxonList(TaxonList list, int page, UserCredentials login);
+        Task<IEnumerable<TaxonName>> DownloadTaxonList(TaxonList list, int page, UserCredentials login);
         [OperationContract]
         IEnumerable<Property> GetPropertiesForUser(UserCredentials login);
         [OperationContract]

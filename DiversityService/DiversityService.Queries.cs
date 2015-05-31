@@ -19,8 +19,12 @@ namespace DiversityService
 
         private const string DIVERSITYMODULE_TAXONNAMES = "DiversityTaxonNames";
 
-        private const string CACHE_MODULES = "MODULES";
+        // DB Function Names
+        private const string FUNCTION_DM_TAXONLISTS4U = "DiversityMobile_TaxonListsForUser";
+        private const string FUNCTION_DIVERSITYMODULE = "DiversityWorkbenchModule";
 
+        // Cache Tags
+        private const string CACHE_MODULES = "MODULES";
         private const string CACHE_TAXON_LISTS = "TAXONLISTS";
 
         private readonly TimeSpan CACHE_TTL = TimeSpan.FromMinutes(5);
@@ -63,6 +67,7 @@ namespace DiversityService
             catch(Exception ex)
             {
                 this.Log().ErrorException(string.Format("Selecting Databases from Server: {0}", serverId), ex);
+                throw; // Stop further processing
             }
 
             var modules = new Dictionary<string, IEnumerable<string>>();
@@ -71,24 +76,27 @@ namespace DiversityService
             {
                 try
                 {
-                    // Check if the DiversityWorkbenchModule Function exists
+                    // Check if we have access to the DB
 
-                    db.OpenSharedConnection();
-                    db.Connection.ChangeDatabase(dbName);
+                    var hasAccess = hasAccessToDB(db, dbName);
 
-                    var isModule = db.ExecuteScalar<int>(
-                        string.Format(@"
-                        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END 
-                        FROM   sys.objects
-                        WHERE  object_id = OBJECT_ID(N'[dbo].[DiversityWorkbenchModule]')
-                        AND type IN(N'FN', N'IF', N'TF', N'FS', N'FT')", dbName)) != 0;
-                    
-                    if (!isModule)
+                    if (!hasAccess)
                     {
+                        this.Log().Debug("({0}) {1} cannot access {2} on server {3}", nameof(getDiversityModules), userId, dbName, serverId);
                         continue;
                     }
 
-                    var moduleType = db.ExecuteScalar<string>("SELECT [dbo].[DiversityWorkbenchModule]()");
+
+                    // Check if the DiversityWorkbenchModule Function exists
+                    var isModule = functionExists(db, dbName, FUNCTION_DIVERSITYMODULE);
+                    
+                    if (!isModule)
+                    {
+                        this.Log().Debug("({0}) database {1} on {2} is not a module, skipping", nameof(getDiversityModules), dbName, serverId);
+                        continue;
+                    }
+
+                    var moduleType = db.ExecuteScalar<string>("SELECT [" + dbName + "].[dbo].["+ FUNCTION_DIVERSITYMODULE + "]()");
 
                     if (!string.IsNullOrWhiteSpace(moduleType))
                     {
@@ -115,6 +123,21 @@ namespace DiversityService
             return modules;
         }
 
+        private bool hasAccessToDB(Diversity db, string dbName)
+        {
+            return db.ExecuteScalar<int?>("SELECT HAS_DBACCESS(@0)", dbName) == 1;
+        }
+
+        private bool functionExists(Diversity db, string dbName, string functionName)
+        {
+            return db.ExecuteScalar<int>(
+                        string.Format(@"
+                        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END 
+                        FROM   [{0}].[sys].[objects]
+                        WHERE  object_id = OBJECT_ID(N'[{0}].[dbo].[{1}]')
+                        AND type IN(N'FN', N'IF', N'TF', N'FS', N'FT')",dbName, functionName)) != 0;
+        }
+
         private IEnumerable<TaxonList> enumerateTaxonListsFromServer(Diversity db, string repository, string loginName)
         {
             var result = new List<TaxonList>();
@@ -127,6 +150,19 @@ namespace DiversityService
             {
                 foreach (var dtn in dtnInstances)
                 {
+                    var hasDMFunction = functionExists(db, dtn, FUNCTION_DM_TAXONLISTS4U);
+
+                    if (!hasDMFunction)
+                    {
+                        this.Log().Warn("({0}) Database {1} on server {2} reports to be a {3} module but does not have {4}",
+                            nameof(enumerateTaxonListsFromServer),
+                            dtn,
+                            repository,
+                            DIVERSITYMODULE_TAXONNAMES,
+                            FUNCTION_DM_TAXONLISTS4U);
+                        continue;
+                    }
+
                     var lists = taxonListsForUser(dtn, loginName, db)
                         .Select(l => 
                         {
@@ -150,7 +186,7 @@ namespace DiversityService
         private static IEnumerable<TaxonList> taxonListsForUser(string catalog, string loginName, Diversity db)
         {
             return db.Query<TaxonList>(
-                string.Format("SELECT * FROM [{0}].[dbo].[DiversityMobile_TaxonListsForUser](@0) AS [TaxonList]", catalog),
+                string.Format("SELECT * FROM [{0}].[dbo].[{1}](@0) AS [TaxonList]", catalog, FUNCTION_DM_TAXONLISTS4U),
                 loginName);
         }
 
