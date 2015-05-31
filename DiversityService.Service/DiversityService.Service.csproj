@@ -124,6 +124,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+    <Content Include="ApplicationInsights.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Properties\PublishProfiles\TestServer.pubxml" />
     <None Include="Properties\PublishProfiles\Zip.pubxml" />
   </ItemGroup>

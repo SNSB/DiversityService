@@ -10,6 +10,8 @@
     using System.Reflection;
     using System.Diagnostics.Contracts;
     using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.Extensibility;
+    using System.Diagnostics;
 
     static class InsightsLogging
     {
@@ -31,13 +33,15 @@
             {
                 try
                 {
+                    TelemetryConfiguration.Active.InstrumentationKey = key;
                     Client = new TelemetryClient();
-                    Client.InstrumentationKey = key;
                     Locator.CurrentMutable.RegisterConstant(new InsightsLogManager(), typeof(ILogManager));
                 }
-                catch(Exception)
+                catch(Exception ex)
                 {
                     // No Logging
+                    Debugger.Break();
+                    Trace.TraceError("Exception while initializing logging: \n {0}", ex);
                 }
             }
         }
@@ -71,6 +75,7 @@
         public InsightsLogger(TelemetryClient client, Type callingType)
         {
             _client = client;
+            
             prefix = String.Format(CultureInfo.InvariantCulture, "{0}: ", callingType.Name);
 
             stringFormat = typeof(String).GetMethod("Format", new[] { typeof(IFormatProvider), typeof(string), typeof(object[]) });
