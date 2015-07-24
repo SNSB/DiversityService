@@ -11,6 +11,17 @@ namespace DiversityService
 {
     public partial class DiversityService : IDiversityService
     {
+        public IEnumerable<EventSeries> EventSeriesByQuery(string query, UserCredentials login)
+        {
+            // substring match against series code
+            query = string.Format("%{0}%", query);
+
+            using (var db = login.GetConnection())
+            {
+                return db.Query<EventSeries>("WHERE [SeriesCode] LIKE @0", query);
+            }
+        }
+
         public EventSeries EventSeriesByID(int collectionSeriesID, UserCredentials login)
         {
             using (var db = login.GetConnection())

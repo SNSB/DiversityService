@@ -58,6 +58,9 @@
 
         #region Download
         [OperationContract]
+        IEnumerable<EventSeries> EventSeriesByQuery(string query, UserCredentials login);
+
+        [OperationContract]
         EventSeries EventSeriesByID(int collectionSeriesID, UserCredentials login);
 
         [OperationContract]
