@@ -67,6 +67,9 @@
         IEnumerable<Localization> LocalizationsForSeries(int collectionSeriesID, UserCredentials login);
 
         [OperationContract]
+        IEnumerable<Event> EventsForSeries(int collectionSeriesID, UserCredentials login);
+
+        [OperationContract]
         IEnumerable<Event> EventsByLocality(string locality, UserCredentials login);
 
         [OperationContract]

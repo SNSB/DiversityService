@@ -45,6 +45,14 @@ namespace DiversityService
             }
         }
 
+        public IEnumerable<Event> EventsForSeries(int collectionSeriesID, UserCredentials login)
+        {
+            using (var db = login.GetConnection())
+            {
+                return db.Query<Event>("WHERE [SeriesID] = @0", collectionSeriesID).ToList();
+            }
+        }
+
         public IEnumerable<Localization> LocalizationsForSeries(int collectionSeriesID, UserCredentials login)
         {
             try
