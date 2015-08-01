@@ -3829,6 +3829,25 @@ namespace PetaPoco
                     {
                         return delegate(object src) { return EnumMapper.EnumFromString(dstType, (string)src); };
                     }
+                    else if (dstType.IsGenericType && dstType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                    {
+                        return delegate (object src)
+                        {
+                            var t = dstType;
+
+                            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                            {
+                                if (src == null)
+                                {
+                                    return null;
+                                }
+
+                                t = Nullable.GetUnderlyingType(t);
+                            }
+
+                            return Convert.ChangeType(src, t, null);
+                        };
+                    }
                     else
                     {
                         return delegate(object src) { return Convert.ChangeType(src, dstType, null); };
