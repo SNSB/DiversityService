@@ -18,7 +18,7 @@ namespace DiversityService
 
             using (var db = login.GetConnection())
             {
-                return db.Query<EventSeries>("WHERE [SeriesCode] LIKE @0", query);
+                return db.Query<EventSeries>("WHERE [SeriesCode] LIKE @0 OR [Description] LIKE @1", query, query).Take(50).ToList();
             }
         }
 
@@ -65,12 +65,19 @@ namespace DiversityService
                             .From("[CollectionEventSeries]")
                             .Where("[SeriesID] = @0", collectionSeriesID);
 
-                    var geo = db
-                        .ExecuteScalar<SqlGeography>(
-                        sql
-                        );
+                    try
+                    {
+                        var geo = db
+                            .ExecuteScalar<SqlGeography>(
+                            sql
+                            );
 
-                    return EnumeratePoints(geo).ToList();
+                        return EnumeratePoints(geo).ToList();
+                    }
+                    catch (InvalidCastException) // presumably DbNull
+                    {
+                        Enumerable.Empty<Localization>();
+                    }
                 }
             }
             catch (Exception)
