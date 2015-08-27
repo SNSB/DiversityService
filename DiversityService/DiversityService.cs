@@ -82,8 +82,11 @@ namespace DiversityService
                             })
                         .ToList(); //TODO Use credential DB
                 }
-                catch
+                catch(Exception ex)
                 {
+                    this.Log().ErrorException(
+                        string.Format("{0}", nameof(GetProjectsForUser)), ex);
+                
                     return Enumerable.Empty<Project>();
                 }
             }
